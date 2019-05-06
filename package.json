@@ -1,0 +1,19 @@
+{
+	"name": "ocr-video",
+	"version": "0.0.1",
+	"main": "app.js",
+	"repository": "https://github.com/duncannah/ocr-video",
+	"scripts": {
+		"start": "node --harmony ."
+	},
+	"author": "duncannah",
+	"license": "AGPL-3.0",
+	"private": false,
+	"dependencies": {
+		"commander": "^2.20.0",
+		"fluent-ffmpeg": "^2.1.2",
+		"fs-extra": "^7.0.1",
+		"googleapis": "^39.2.0",
+		"md5-file": "^4.0.0"
+	}
+}

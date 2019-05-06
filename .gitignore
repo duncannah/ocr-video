@@ -1,0 +1,11 @@
+.DS_Store
+Thumbs.db
+
+node_modules
+
+*.json
+*.vtt
+
+!package.json
+
+ocr-video_tmp.*
