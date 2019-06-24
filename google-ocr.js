@@ -63,16 +63,6 @@ class gOCR {
 			fields: "id"
 		});
 
-		// Now download
-		/*
-		let textStream = new stream.Writable();
-		let textChunks = [];
-		let textString = "";
-
-		textStream.on("data", (chunk) => textChunks.push(chunk));
-		textStream.on("end", () => (textString = Buffer.concat(textChunks).toString("utf8")));
-		*/
-
 		let string = await new Promise((resolve) => {
 			this.drive.files.export(
 				{

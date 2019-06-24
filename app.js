@@ -75,11 +75,6 @@ program
 
 	process.stdout.write("\n");
 
-	// debeug
-	//await fs.writeJSON("./test.json", strings);
-
-	//const strings = await fs.readJSON("./test.json");
-
 	// Create a VTT file
 	let vtt = [`WEBVTT\n\n`];
 	for (const [second, string] of strings.entries()) {
