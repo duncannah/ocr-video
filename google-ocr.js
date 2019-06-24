@@ -8,11 +8,12 @@ const { google } = require("googleapis");
 const TOKEN_PATH = path.join(__dirname, "token.json");
 
 class gOCR {
-	constructor(fileHash) {
+	constructor(fileHash, lang) {
 		this.fileHash = fileHash;
 		this.auth = null;
 		this.drive = null;
 		this.tmpFolderId = null;
+		this.ocrLang = lang;
 	}
 
 	init = async () => {
@@ -36,37 +37,76 @@ class gOCR {
 		});
 		this.drive = google.drive({ version: "v3", auth: this.auth });
 
-		// create directory for operations
-		let file = await this.drive.files.create({
-			resource: {
-				name: "ocr-video_tmp." + this.fileHash,
-				mimeType: "application/vnd.google-apps.folder"
-			},
-			fields: "id"
+		// check if file exists
+		let list = await this.drive.files.list({
+			q: "name = 'ocr-video_tmp." + this.fileHash + "' and mimeType = 'application/vnd.google-apps.folder'",
+			fields: "files"
 		});
-		this.tmpFolderId = file.data.id;
+
+		let file;
+		let lastFrame = -1;
+
+		if (list.data.files.length) {
+			// folder already exists
+			this.tmpFolderId = list.data.files[0].id;
+
+			// get the latest frame uploaded
+			let latestFrameFiles = await this.drive.files.list({
+				q: "mimeType = 'application/vnd.google-apps.document' and '" + list.data.files[0].id + "' in parents",
+				orderBy: "name desc",
+				fields: "files"
+			});
+
+			if (latestFrameFiles.data.files.length) {
+				let latestVerifiedFrameFiles = latestFrameFiles.data.files.filter((f) => f.name.match(/^^tmp_\d{6}$$/));
+				if (latestVerifiedFrameFiles.length)
+					lastFrame = parseInt(latestVerifiedFrameFiles[0].name.substr(4), 10);
+			}
+		} else
+			this.tmpFolderId = (await this.drive.files.create({
+				resource: {
+					name: "ocr-video_tmp." + this.fileHash,
+					mimeType: "application/vnd.google-apps.folder"
+				},
+				fields: "id"
+			})).data.id;
+
+		return lastFrame;
 	};
 
-	OCRImage = async (filePath, lang) => {
+	OCRImage = async (filePath, exists) => {
 		// Upload image
-		let imageFile = await this.drive.files.create({
-			resource: {
-				name: path.basename(filePath),
-				mimeType: "application/vnd.google-apps.document",
-				parents: [this.tmpFolderId]
-			},
-			media: {
-				mimeType: "image/jpeg",
-				body: fs.createReadStream(filePath)
-			},
-			ocrLanguage: lang,
-			fields: "id"
-		});
+		let imageFile;
+
+		if (exists) {
+			imageFile = (await this.drive.files.list({
+				q:
+					"name = '" +
+					path.basename(filePath, ".jpg") +
+					"' and mimeType = 'application/vnd.google-apps.document' and '" +
+					this.tmpFolderId +
+					"' in parents",
+				fields: "files"
+			})).data.files[0].id;
+		} else
+			imageFile = (await this.drive.files.create({
+				resource: {
+					name: path.basename(filePath),
+					mimeType: "application/vnd.google-apps.document",
+					parents: [this.tmpFolderId]
+				},
+				media: {
+					mimeType: "image/jpeg",
+					body: fs.createReadStream(filePath)
+				},
+				ocrLanguage: this.ocrLang,
+				fields: "id"
+			})).data.id;
 
 		let string = await new Promise((resolve) => {
 			this.drive.files.export(
 				{
-					fileId: imageFile.data.id,
+					fileId: imageFile,
 					mimeType: "text/plain"
 				},
 				(err, resp) => {
@@ -76,6 +116,8 @@ class gOCR {
 				}
 			);
 		});
+
+		console.log(string);
 
 		return string.substr(21);
 	};

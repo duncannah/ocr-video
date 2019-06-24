@@ -57,14 +57,14 @@ program
 
 	console.log("Initializing OCR...");
 	const gOCR = new (require("./google-ocr"))(fileMD5, program.lang !== "auto" ? program.lang : undefined);
-	await gOCR.init();
+	let lastFrame = await gOCR.init();
 
 	console.log("OCR scanning...");
 
 	const strings = [];
 
 	for (const [index, file] of files.entries()) {
-		strings.push(await gOCR.OCRImage(path.join(tmpFolder, file)));
+		strings.push(await gOCR.OCRImage(path.join(tmpFolder, file), index <= lastFrame));
 
 		process.stdout.clearLine();
 		process.stdout.cursorTo(0);
