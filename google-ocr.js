@@ -39,7 +39,10 @@ class gOCR {
 
 		// check if file exists
 		let list = await this.drive.files.list({
-			q: "name = 'ocr-video_tmp." + this.fileHash + "' and mimeType = 'application/vnd.google-apps.folder'",
+			q:
+				"name = 'ocr-video_tmp." +
+				this.fileHash +
+				"' and mimeType = 'application/vnd.google-apps.folder' and trashed = false",
 			fields: "files"
 		});
 
@@ -52,7 +55,10 @@ class gOCR {
 
 			// get the latest frame uploaded
 			let latestFrameFiles = await this.drive.files.list({
-				q: "mimeType = 'application/vnd.google-apps.document' and '" + list.data.files[0].id + "' in parents",
+				q:
+					"mimeType = 'application/vnd.google-apps.document' and '" +
+					list.data.files[0].id +
+					"' in parents and trashed = false",
 				orderBy: "name desc",
 				fields: "files"
 			});
@@ -85,7 +91,7 @@ class gOCR {
 					path.basename(filePath, ".jpg") +
 					"' and mimeType = 'application/vnd.google-apps.document' and '" +
 					this.tmpFolderId +
-					"' in parents",
+					"' in parents and trashed = false",
 				fields: "files"
 			})).data.files[0].id;
 		} else
